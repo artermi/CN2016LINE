@@ -25,18 +25,18 @@ def dumpMembers():
 	IDpwStr = json.dump(IDpw)
 	IDlistStr = json.dump(IDlist)
 	
-	with open('storage/Members', 'w') as file:
+	with open('storage/Members', 'w') as f:
 		while True:	# requiring exclusive lock
 			try:
-				fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+				fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
 				break
 			except BlockingIOError:
-				print('Someone is accessing ' + file.name)
+				print('Someone is accessing ' + f.name)
 				time.sleep(0.1)
 		
-		file.write(IDpwStr + '\n' + IDlistStr + '\n')	# dump IDpw and IDlist into file 'Members', line by line
+		f.write(IDpwStr + '\n' + IDlistStr + '\n')	# dump IDpw and IDlist into f 'Members', line by line
 		
-		fcntl.flock(file, fcntl.LOCK_UN)	# release lock
+		fcntl.flock(f, fcntl.LOCK_UN)	# release lock
 
 def register(sock, data):
 	global IDpw
@@ -56,7 +56,7 @@ def register(sock, data):
 		ackDict = {'action' : 'register', 'to' : data['from'], 'time' : time.time(), 'body' : '註冊成功'}
 		ack = json.dumps(ackDict)
 		
-		dumpMembers()	# add new account information into file 'Members'
+		dumpMembers()	# add new account information into f 'Members'
 		
 		os.mkdir('storage/' + data['from'])
 		with open('storage/' + data['from'] + '/unread', 'a'):
@@ -84,23 +84,23 @@ def login(sock, data):
 		msg_count = 0
 		body = []
 		
-		with open('storage/' + data['from'] + '/unread', 'r+') as file:
+		with open('storage/' + data['from'] + '/unread', 'r+') as f:
 			while True:	# requiring exclusive lock
 				try:
-					fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
 					break
 				except BlockingIOError:
-					print('Someone is accessing ' + file.name)
+					print('Someone is accessing ' + f.name)
 					time.sleep(0.1)
 					
-			for line in file:	# pack all unread message into body
+			for line in f:	# pack all unread message into body
 				body.append(line)
 				msg_count += 1
 			
-			file.seek(0, 0)
-			file.truncate()
+			f.seek(0, 0)
+			f.truncate()
 			
-			fcntl.flock(file, fcntl.LOCK_UN)	# release lock
+			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
 			
 		if msg_count == 0:	# file 'unread' is empty
 			ackDict = {'action' : 'login', 'to' : data['from'], 'time' : time.time(), 'body' : '登入成功，無未讀訊息'}
@@ -115,7 +115,7 @@ def login(sock, data):
 def msg(sock, data):
 	pass
 
-def file(sock, data):
+def f(sock, data):
 	pass
 	
 def history(sock, data):
@@ -151,8 +151,8 @@ def handleMsg(sock):
 		login(sock, data)
 	elif data['action'] == 'msg':
 		msg(sock, data)
-	elif data['action'] == 'file':
-		file(sock, data)
+	elif data['action'] == 'f':
+		f(sock, data)
 	elif data['action'] == 'history':	
 		history(sock, data)
 	elif data['action'] == 'logout':	
@@ -164,10 +164,10 @@ def loadMembers():
 	global IDlist
 	global IDsocket
 	
-	with open('storage/Members', 'r') as file:	# load IDpw and IDlist from file 'Members', line by line; initialize IDsocket
-		IDpwStr = file.readline()
+	with open('storage/Members', 'r') as f:	# load IDpw and IDlist from file 'Members', line by line; initialize IDsocket
+		IDpwStr = f.readline()
 		IDpw = json.loads(IDpwStr)
-		IDlistStr = file.readline()
+		IDlistStr = f.readline()
 		IDlist = json.loads(IDlistStr)
 		IDsocket = copy.deepcopy(IDlist)
 	
