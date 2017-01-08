@@ -113,9 +113,87 @@ def login(sock, data):
 		sock.send(ack)
 
 def msg(sock, data):
-	pass
+	dataStr = json.dumps(data)
+	
+	if data['to'] not in IDsocket:	# account not existing
+		ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
+		ack = json.dumps(ackDict)
+		sock.send(ack)
+		
+	elif IDsocket[data['to']] == []:	# account offline, append message to 'unread' and logs for both side
+		
+		with open('storage/' + data['to'] + '/unread', 'a') as f:
+			while True:	# requiring exclusive lock
+				try:
+					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					break
+				except BlockingIOError:
+					print('Someone is accessing ' + f.name)
+					time.sleep(0.1)
+					
+			f.write(dataStr + '\n')
+			
+			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
+		
+		with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f:
+			while True:	# requiring exclusive lock
+				try:
+					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					break
+				except BlockingIOError:
+					print('Someone is accessing ' + f.name)
+					time.sleep(0.1)
+					
+			f.write(dataStr + '\n')
+			
+			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
+			
+		with open('storage/' + data['from'] + '/' + data['to'] + '.log', 'a') as f:
+			while True:	# requiring exclusive lock
+				try:
+					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					break
+				except BlockingIOError:
+					print('Someone is accessing ' + f.name)
+					time.sleep(0.1)
+					
+			f.write(dataStr + '\n')
+			
+			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
+		
+		ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '帳號離線中，已加入未讀訊息'}
+		ack = json.dumps(ackDict)
+		sock.send(ack)
+		
+	else:	# account online, send message to all sockets of same account; append message to logs for both side
+		sent = 0
+		success = 0
+		
+		for client in IDsocket[data['to']]:
+			client.send(dataStr)
+			sent += 1
+			
+			resStr = ''
+			while True:
+				buff = client.recv(BUFF_SIZE)
+				if not buff:
+					break
+				resStr = resStr + buff
+				
+			res = json.loads(resStr)
+			if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
+				success += 1
+			
+		if sent != 0 and sent == success:
+			ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送成功'}
+			ack = json.dumps(ackDict)
+			sock.send(ack)
+		else:
+			ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送失敗'}
+			ack = json.dumps(ackDict)
+			sock.send(ack)
 
-def f(sock, data):
+def fl(sock, data):
 	pass
 	
 def history(sock, data):
@@ -151,8 +229,8 @@ def handleMsg(sock):
 		login(sock, data)
 	elif data['action'] == 'msg':
 		msg(sock, data)
-	elif data['action'] == 'f':
-		f(sock, data)
+	elif data['action'] == 'fl':
+		fl(sock, data)
 	elif data['action'] == 'history':	
 		history(sock, data)
 	elif data['action'] == 'logout':	
