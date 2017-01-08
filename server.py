@@ -122,7 +122,7 @@ def msg(sock, data):
 		
 	elif IDsocket[data['to']] == []:	# account offline, append message to 'unread' and logs for both side
 		
-		with open('storage/' + data['to'] + '/unread', 'a') as f:
+		with open('storage/' + data['to'] + '/unread', 'a') as f:	# write to unread on receiver's side
 			while True:	# requiring exclusive lock
 				try:
 					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -135,7 +135,7 @@ def msg(sock, data):
 			
 			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
 		
-		with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f:
+		with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f:	# write to log on receiver's side
 			while True:	# requiring exclusive lock
 				try:
 					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -148,7 +148,7 @@ def msg(sock, data):
 			
 			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
 			
-		with open('storage/' + data['from'] + '/' + data['to'] + '.log', 'a') as f:
+		with open('storage/' + data['from'] + '/' + data['to'] + '.log', 'a') as f:	# write to log on sender's side
 			while True:	# requiring exclusive lock
 				try:
 					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -169,7 +169,33 @@ def msg(sock, data):
 		sent = 0
 		success = 0
 		
-		for client in IDsocket[data['to']]:
+		with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f:	# write to log on receiver's side
+			while True:	# requiring exclusive lock
+				try:
+					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					break
+				except BlockingIOError:
+					print('Someone is accessing ' + f.name)
+					time.sleep(0.1)
+					
+			f.write(dataStr + '\n')
+			
+			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
+			
+		with open('storage/' + data['from'] + '/' + data['to'] + '.log', 'a') as f:	# write to log on sender's side
+			while True:	# requiring exclusive lock
+				try:
+					fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+					break
+				except BlockingIOError:
+					print('Someone is accessing ' + f.name)
+					time.sleep(0.1)
+					
+			f.write(dataStr + '\n')
+			
+			fcntl.flock(f, fcntl.LOCK_UN)	# release lock
+			
+		for client in IDsocket[data['to']]:	# send message to receiver's all online clients
 			client.send(dataStr)
 			sent += 1
 			
@@ -183,7 +209,7 @@ def msg(sock, data):
 			res = json.loads(resStr)
 			if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
 				success += 1
-			
+				
 		if sent != 0 and sent == success:
 			ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送成功'}
 			ack = json.dumps(ackDict)
