@@ -320,7 +320,7 @@ def history(sock, data):
 		
 		fcntl.flock(f, fcntl.LOCK_UN)	# release lock
 		
-	ackDict = {'action' : 'history', 'to' : data['from'], 'time' : time.time(), 'body' : body}	# send unread messages to client
+	ackDict = {'action' : 'history', 'to' : data['from'], 'time' : time.time(), 'body' : body}	# send log to client
 	ack = json.dumps(ackDict)
 	sock.send(ack)
 
