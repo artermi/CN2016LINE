@@ -327,12 +327,16 @@ def history(sock, data):
 def logout(sock, data):
 	global IDsocket
 	
-	if sock in IDsocket[data['from']]:
-		IDsocket[data['from']].remove(sock)	# remove sock from the client's list
+	IDsocket[data['from']].remove(sock)	# remove sock from the client's list
+	
+	ackDict = {'action' : 'logout', 'to' : data['from'], 'time' : time.time(), 'body' : body}
+	ack = json.dumps(ackDict)
+	sock.send(ack)
 
 def handleMsg(sock):
 	global HandlingMsg
 	global watching
+	global IDsocket
 	
 	dataStr = ''
 	while True:
@@ -342,7 +346,9 @@ def handleMsg(sock):
 		dataStr = dataStr + buff
 		
 	if dataStr == '':	# client socket closed
-		logout(sock, data)
+		for key in IDsocket:
+			if sock in IDsocket[key]:
+				IDsocket[key].remove(sock)	# remove sock from the client's list
 		watching.remove(sock)
 		HandlingMsg.remove(sock)
 		return
