@@ -1,14 +1,17 @@
-
+import instruction as inst
 
 while True:
-    ID = input('Type your ID or new to register:')
-    Password = input('password')
-    
     Result = False
-    if ID == 'new' :
-        register(ID,Password)
+
+    ID = input('Type your ID to log in or type \'new\' to register:')
+    ID = ID.strip()
+    if ID == 'new':
+        ID = input('Your ID:')
+        Password = input('Password:')
+        inst.register(ID,Password)
     else:
-        Result = login(ID,Password)
+        Password = input('Password:')
+        Result = inst.login(ID,Password)
 
     if Result == True:
         break;
