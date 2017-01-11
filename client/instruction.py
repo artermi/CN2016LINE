@@ -4,7 +4,7 @@ import json
 
 
 
-def send_to_server(data):
+def new_to_server(data):
     
     f = open ('ServerID','r')
     socketID = f.readline()
@@ -38,7 +38,7 @@ def send_to_server(data):
 
 
 
-def recv_from_server(sock):
+def recv_and_close(sock):
     dataStr = b''
     dataSize = int(str(sock.recv(256),'utf-8'))
 
@@ -56,7 +56,7 @@ def recv_from_server(sock):
 
 def register(ID,pw):
     ackDict = {'action':'register','from':str(ID) ,'pw':str(pw)}
-    sock = send_to_server(json.dumps(ackDict))
-    result = json.loads(recv_from_server(sock))
+    sock = new_to_server(json.dumps(ackDict))
+    result = json.loads(recv_and_close(sock))
     print(result['body'])
     print(result['time'])
