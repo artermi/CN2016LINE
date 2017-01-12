@@ -78,11 +78,12 @@ def recv_and_close(sock):
 
 def process_file_name(fresult):
     name = fresult['name']
-    named = name.split('/')
-    if len(named) == 1:
-        return
-    else:
-        fresult[name] = named[-1]
+    named1 = name.split('\\')
+    if len(named1) != 1:
+        fresult['name'] = named1[-1]
+    named2 = name.split('/')
+    if len(named2) != 1:
+        fresult['name'] = named2[-1]
 
 def always_listen_server(sock):
     global curID
@@ -102,13 +103,18 @@ def always_listen_server(sock):
             reponse = json.dumps({'action':'fl','from':str(curID),'body':'已收到檔案資訊'})
 #            print(mata)
             sock.send(reponse.encode('utf-8'))
+
             now_size = 0
-            
-            
             while now_size < result['length']:
-                fi_rc = recv_byte(sock)
-                now_size += 4096
-                print(fi_rc,'sth')
+                if result['length'] - now_size < 4096:
+                    fi_rc = sock.recv(result['length'] - now_size)
+                else: 
+                    fi_rc = sock.recv(4096)
+
+                now_size += len(str(fi_rc,'utf-8'))
+                print(result['length'],now_size)
+                print(fi_rc,'\n=============================')
+
             response = json.dumps({'action':'fl','from':str(curID),'body':'已收到檔案'})
             print(response)
             sock.send(response.encode('utf-8'))
@@ -117,10 +123,6 @@ def always_listen_server(sock):
             return
         elif result['action'] == 'logout':
             print(result['body'])
-
-
-
-
 
 
 def history(user): 
@@ -206,7 +208,7 @@ def login(ID,pw):
     ackDict = {'action':'login','from':str(ID), 'pw':str(pw)}
     sock = new_to_server(json.dumps(ackDict))
     recv_msg = json.loads( recv_from_server(sock) ) 
-    print(recv_msg)
+#    print(recv_msg)
     print(recv_msg['body'])
 
     if recv_msg['body'] != '無此帳號' and recv_msg['body'] != '密碼錯誤':

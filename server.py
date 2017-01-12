@@ -300,6 +300,7 @@ def fl(sock, data):
         
         for client in IDsocket[data['to']]:
             client.send(buff)
+        print(dataLen,receivedLen)
     
     success = 0
     
