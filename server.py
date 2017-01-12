@@ -9,6 +9,7 @@ import copy
 import subprocess
 import codecs
 import array, termios
+import miku
 
 BUFF_SIZE = 4096
 IDpw = dict({}) # the ID-password mapping
@@ -119,6 +120,9 @@ def msg(sock, data):
     dataStr = json.dumps(data)
     
     if data['to'] not in IDsocket:  # account not existing
+        if data['to'] == 'miku':
+           miku.chat(sock,data) 
+           return
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
         sock.send(ack.encode('utf-8'))
@@ -295,7 +299,7 @@ def fl(sock, data):
         receivedLen += recvLen
         
         for client in IDsocket[data['to']]:
-            sock.send(buff.encode('utf-8'))
+            client.send(buff)
     
     success = 0
     
@@ -353,12 +357,12 @@ def history(sock, data):
     sock.send(ack.encode('utf-8'))
 
 def logout(sock, data):
-    global IDsocket
-    
+    global IDsocket 
     IDsocket[data['from']].remove(sock) # remove sock from the client's list
     
-    ackDict = {'action' : 'logout', 'to' : data['from'], 'time' : time.time(), 'body' : body}
+    ackDict = {'action' : 'logout', 'to' : data['from'], 'time' : time.time(), 'body' : '登出成功'}
     ack = json.dumps(ackDict)
+    print(ack)
     sock.send(ack.encode('utf-8'))
 
 def handleMsg(sock):
