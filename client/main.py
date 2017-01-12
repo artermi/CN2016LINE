@@ -13,8 +13,8 @@ while True:
         Password = input('Password: ')
         Result = inst.login(ID,Password)
 
-    if Result['login'] == True:
-        break;
+        if Result['login']:
+            break;
 
 
 

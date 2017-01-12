@@ -53,12 +53,12 @@ def recv_from_server(sock):
 
 def recv_and_close(sock):
     dataStr = recv_from_server(sock)
-    sock.close()
+#    sock.close()
     print(dataStr)
     return(dataStr)
 
 
-def alway_listen_server(sock):
+def always_listen_server(sock):
     watching = []
     while True:
         recv = recv_from_server(sock)
@@ -74,14 +74,14 @@ def register(ID,pw):
     print(result['time'])
 
 def login(ID,pw):
-    ackDict = {'action':'login','from':str(ID), 'pw':srt(pw)}
+    ackDict = {'action':'login','from':str(ID), 'pw':str(pw)}
     sock = new_to_server(json.dumps(ackDict))
     recv_msg = json.loads( recv_from_server(sock) ) 
     print(recv_msg['body'])
 
     if recv_msg['body'] != '無此帳號' and recv_msg['body'] != '密碼錯誤':
         return {'login':True, 'socket' : sock}
-    else 
+    else: 
         sock.close()
         return {'login':False}
 
