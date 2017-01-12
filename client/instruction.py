@@ -1,6 +1,6 @@
 #coding: utf-8
-import socket,sys,errno
-import json
+import socket,sys,errno,termios
+import json,array
 
 
 
@@ -32,18 +32,18 @@ def send_to_server(data):
         sys.exit(1)
 
 
-    sock.send(matadata.encode('utf-8'))
     sock.send(data.encode('utf-8'))
     return sock
 
 
 
 def recv_from_server(sock):
-    dataStr = b''
-    dataSize = int(str(sock.recv(256),'utf-8'))
+    Bufsize = array.array('i',[0])
+    fcntl.ioctl(sock,terminos.FIONREAD, Bufsize,1)
+    bufsize = Bufsize[0]
 
     dataByte = b''
-    dataByte = sock.recv(dataSize)
+    dataByte = sock.recv(bufsizq)
 
     dataStr = str(dataByte,'utf-8')
 
