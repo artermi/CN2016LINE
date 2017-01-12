@@ -85,7 +85,7 @@ def login(sock, data):
         sock.send(ack.encode('utf-8'))
         return
         
-    IDsocket[data['from']] = IDsocket[data['from']] + sock  # add sock into the client's list
+    IDsocket[data['from']].append(sock)  # add sock into the client's list
     
     with open('storage/' + data['from'] + '/unread', 'r+') as f:
         while True: # requiring exclusive lock
