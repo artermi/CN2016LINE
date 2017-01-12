@@ -368,7 +368,7 @@ def handleMsg(sock):
                 IDsocket[key].remove(sock)  # remove sock from the client's list
         if sock in watching:
             watching.remove(sock)
-        HandlingMsg.remove(sock.fileno)
+        HandlingMsg.remove(sock.fileno())
         return
 
     data = json.loads(dataStr)
@@ -384,7 +384,7 @@ def handleMsg(sock):
         history(sock, data)
     elif data['action'] == 'logout':    
         logout(sock, data)
-    HandlingMsg.remove(sock.fileno)
+    HandlingMsg.remove(sock.fileno())
     
 def loadMembers():
     global IDpw
