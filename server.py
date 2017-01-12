@@ -181,9 +181,9 @@ def msg(sock, data):
         Bufsize = array.array('i',[0])
         while True:
             fcntl.ioctl(client,termios.FIONREAD, Bufsize,1)
-            if Bufsize[0] != 0:
+            bufsize = Bufsize[0]
+            if bufsize != 0:
                 break
-        bufsize = Bufsize[0]
 
         print(bufsize)
 
@@ -208,6 +208,7 @@ def msg(sock, data):
     
 def fl(sock, data):
     global IDsocket
+    global HandlingMsg
     
     dataLen = data['length']
     dataStr = json.dumps(data)
@@ -253,21 +254,25 @@ def fl(sock, data):
     success = 0
     
     for client in IDsocket[data['to']]: # send metafile to receiver's all online clients
+        HandlingMsg.append(client.fileno())
+        
         client.send(dataStr.encode('utf-8'))
         
         resBi = b''
         Bufsize = array.array('i',[0])
         while True:
-            fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
-            if Bufsize[0] != 0:
+            fcntl.ioctl(client,termios.FIONREAD, Bufsize,1)
+            bufsize = Bufsize[0]
+            if bufsize != 0:
                 break
-        bufsize = Bufsize[0]
-        resBi = client.recv(bufsize)
         
+        resBi = client.recv(bufsize)
         resStr = str(resBi, 'utf-8')
         res = json.loads(resStr)
         if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案資訊':
             success += 1
+            
+        HandlingMsg.remove(client.fileno())
             
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送失敗'}
@@ -292,6 +297,8 @@ def fl(sock, data):
         receivedLen += recvLen
         
         for client in IDsocket[data['to']]:
+            HandlingMsg.append(client.fileno())
+            
             sock.send(buff.encode('utf-8'))
     
     success = 0
@@ -300,16 +307,18 @@ def fl(sock, data):
         resBi = b''
         Bufsize = array.array('i',[0])
         while True:
-            fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
-            if Bufsize != 0:
+            fcntl.ioctl(client,termios.FIONREAD, Bufsize,1)
+            bufsize = Bufsize[0]
+            if bufsize != 0:
                 break
-        bufsize = Bufsize[0]
         
         resBi = client.recv(bufsize)
         resStr = str(resBi, 'utf-8')
         res = json.loads(resStr)
         if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案':
             success += 1
+            
+        HandlingMsg.remove(client.fileno())
             
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案傳送失敗'}
