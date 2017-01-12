@@ -76,13 +76,13 @@ def login(sock, data):
     if data['from'] not in IDpw:    # account not existing
         ackDict = {'action' : 'login', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     elif IDpw[data['from']] != data['pw']:  # incorrect password
         ackDict = {'action' : 'login', 'to' : data['from'], 'time' : time.time(), 'body' : '密碼錯誤'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     IDsocket[data['from']] = IDsocket[data['from']] + sock  # add sock into the client's list
@@ -105,12 +105,12 @@ def login(sock, data):
     if body == []:  # file 'unread' is empty
         ackDict = {'action' : 'login', 'to' : data['from'], 'time' : time.time(), 'body' : '登入成功，無未讀訊息'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
             
     ackDict = {'action' : 'login', 'to' : data['from'], 'time' : time.time(), 'body' : body}    # send unread messages to client
     ack = json.dumps(ackDict)
-    sock.send(ack)
+    sock.send(ack.encode('utf-8'))
 
 def msg(sock, data):
     global IDsocket
@@ -120,7 +120,7 @@ def msg(sock, data):
     if data['to'] not in IDsocket:  # account not existing
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f: # write to log on receiver's side
@@ -166,21 +166,24 @@ def msg(sock, data):
         
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '帳號離線中，已加入未讀訊息'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     success = 0
     
     for client in IDsocket[data['to']]: # send message to receiver's all online clients
-        client.send(dataStr)
+        client.send(dataStr.encode('utf-8'))
         
-        resStr = ''
+        resBi = b''
+        Bufsize = array.array('i',[0])
         while True:
-            buff = client.recv(BUFF_SIZE)
-            if not buff:
+            fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
+            if Bufsize != 0:
                 break
-            resStr = resStr + buff
-            
+        bufsize = Bufsize[0]
+        
+        resBi = client.recv(bufsize)
+        resStr = str(resBi, 'utf-8')
         res = json.loads(resStr)
         if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
             success += 1
@@ -188,12 +191,12 @@ def msg(sock, data):
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送失敗'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送成功'}
     ack = json.dumps(ackDict)
-    sock.send(ack)
+    sock.send(ack.encode('utf-8'))
     
 def fl(sock, data):
     global IDsocket
@@ -204,13 +207,13 @@ def fl(sock, data):
     if data['to'] not in IDsocket:  # account not existing
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     elif IDsocket[data['to']] == []:    # account offline
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '帳號離線中，無法傳送檔案'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f: # write metafile to log on receiver's side
@@ -242,15 +245,18 @@ def fl(sock, data):
     success = 0
     
     for client in IDsocket[data['to']]: # send metafile to receiver's all online clients
-        client.send(dataStr)
+        client.send(dataStr.encode('utf-8'))
         
-        resStr = ''
+        resBi = b''
+        Bufsize = array.array('i',[0])
         while True:
-            buff = client.recv(BUFF_SIZE)
-            if not buff:
+            fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
+            if Bufsize != 0:
                 break
-            resStr = resStr + buff
-            
+        bufsize = Bufsize[0]
+        resBi = client.recv(bufsize)
+        
+        resStr = str(resBi, 'utf-8')
         res = json.loads(resStr)
         if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案資訊':
             success += 1
@@ -258,12 +264,12 @@ def fl(sock, data):
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送失敗'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
         
     ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送成功'}
     ack = json.dumps(ackDict)
-    sock.send(ack)
+    sock.send(ack.encode('utf-8'))
     
     receivedLen = 0
     recvLen = 0
@@ -278,18 +284,21 @@ def fl(sock, data):
         receivedLen += recvLen
         
         for client in IDsocket[data['to']]:
-            sock.send(buff)
+            sock.send(buff.encode('utf-8'))
     
     success = 0
     
     for client in IDsocket[data['to']]: # receive response from file receiver's all online clients
-        resStr = ''
+        resBi = b''
+        Bufsize = array.array('i',[0])
         while True:
-            buff = client.recv(BUFF_SIZE)
-            if not buff:
+            fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
+            if Bufsize != 0:
                 break
-            resStr = resStr + buff
-            
+        bufsize = Bufsize[0]
+        
+        resBi = client.recv(bufsize)
+        resStr = str(resBi, 'utf-8')
         res = json.loads(resStr)
         if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案':
             success += 1
@@ -297,12 +306,12 @@ def fl(sock, data):
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案傳送失敗'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
 
     ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案傳送成功'}
     ack = json.dumps(ackDict)
-    sock.send(ack)
+    sock.send(ack.encode('utf-8'))
     
 def history(sock, data):
     global IDsocket
@@ -310,7 +319,7 @@ def history(sock, data):
     if data['to'] not in IDsocket:  # account not existing
         ackDict = {'action' : 'history', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
-        sock.send(ack)
+        sock.send(ack.encode('utf-8'))
         return
     
     with open('storage/' + data['from'] + '/' + data['to'] + '.log', 'r+') as f:
@@ -328,7 +337,7 @@ def history(sock, data):
         
     ackDict = {'action' : 'history', 'to' : data['from'], 'time' : time.time(), 'body' : body}  # send log to client
     ack = json.dumps(ackDict)
-    sock.send(ack)
+    sock.send(ack.encode('utf-8'))
 
 def logout(sock, data):
     global IDsocket
@@ -337,7 +346,7 @@ def logout(sock, data):
     
     ackDict = {'action' : 'logout', 'to' : data['from'], 'time' : time.time(), 'body' : body}
     ack = json.dumps(ackDict)
-    sock.send(ack)
+    sock.send(ack.encode('utf-8'))
 
 def handleMsg(sock):
     global HandlingMsg
@@ -345,16 +354,13 @@ def handleMsg(sock):
     global IDsocket
    
     Bufsize = array.array('i',[0])
-    
-    dataStr = ''
-    if fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1) != -1:
-        bufsize = Bufsize[0]
-        if bufsize != 0:
-            print(bufsize)
-            dataByte = b''
-            dataByte = sock.recv(bufsize)
-            dataStr = str(dataByte,'utf-8')
-            print(dataStr)
+    fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
+    bufsize = Bufsize[0]
+    print(bufsize)
+    dataBi = b''
+    dataBi = sock.recv(bufsize)
+    dataStr = str(dataBi,'utf-8')
+    print(dataStr)
         
     if dataStr == '':   # client socket accidentally closed
         for key in IDsocket:
