@@ -366,7 +366,7 @@ def handleMsg(sock):
         for key in IDsocket:
             if sock in IDsocket[key]:
                 IDsocket[key].remove(sock)  # remove sock from the client's list
-        if sock not in watching:
+        if sock in watching:
             watching.remove(sock)
         HandlingMsg.remove(sock)
         return
