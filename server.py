@@ -345,7 +345,7 @@ def handleMsg(sock):
 			break
 		dataStr = dataStr + buff
 		
-	if dataStr == '':	# client socket closed
+	if dataStr == '':	# client socket accidentally closed
 		for key in IDsocket:
 			if sock in IDsocket[key]:
 				IDsocket[key].remove(sock)	# remove sock from the client's list
