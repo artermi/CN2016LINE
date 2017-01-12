@@ -356,7 +356,7 @@ def handleMsg(sock):
             dataStr = str(dataByte,'utf-8')
             print(dataStr)
         
-    if dataStr == '':   # client socket closed
+    if dataStr == '':   # client socket accidentally closed
         for key in IDsocket:
             if sock in IDsocket[key]:
                 IDsocket[key].remove(sock)  # remove sock from the client's list

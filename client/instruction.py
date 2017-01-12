@@ -3,21 +3,12 @@ import socket,sys,fcntl,errno,termios
 import json,array
 
 
-
-def send_to_server(data):
-    
+def create_connection():
     f = open ('ServerID','r')
     socketID = f.readline()
     f.close()
     #in the ServerID file, store server IPv file in the formate of 
-    #'140.112.5.7:5566' formate
-
-    print(data)
-#    print(len(data))
-#    get_bin = lambda x, n:format(x,'b').zfill(n)
-#    matadata = format(len(data.encode('utf-8')),'d').zfill(256)
-#    print(matadata.encode('utf-8'))
-    
+    #'140.112.5.7:5566' formate    
     try:
         sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     except socket.error as msg:
@@ -30,11 +21,17 @@ def send_to_server(data):
     except socket.error as msg:
         sys.stderr.write('[ERROR] %s\n' % msg[1])
         sys.exit(1)
-
-
-    sock.send(data.encode('utf-8'))
+    
     return sock
 
+def new_to_server(data):
+    sock = create_connection()
+    
+    #process the data and matadata
+    print(data)
+    sock.send(data.encode('utf-8'))
+    
+    return sock
 
 
 def recv_from_server(sock):
@@ -50,7 +47,11 @@ def recv_from_server(sock):
     dataByte = sock.recv(bufsize)
 
     dataStr = str(dataByte,'utf-8')
+    return dataStr
 
+
+def recv_and_close(sock):
+    dataStr = recv_from_server(sock)
     sock.close()
     print(dataStr)
     return(dataStr)
@@ -59,7 +60,7 @@ def recv_from_server(sock):
 
 def register(ID,pw):
     ackDict = {'action':'register','from':str(ID) ,'pw':str(pw)}
-    sock = send_to_server(json.dumps(ackDict))
-    result = json.loads(recv_from_server(sock))
+    sock = new_to_server(json.dumps(ackDict))
+    result = json.loads(recv_and_close(sock))
     print(result['body'])
     print(result['time'])
