@@ -76,6 +76,13 @@ def recv_and_close(sock):
     print(dataStr)
     return(dataStr)
 
+def process_file_name(fresult):
+    name = fresult['name']
+    named = name.split('/')
+    if len(named) == 1:
+        return
+    else:
+        fresult[name] = named[-1]
 
 def always_listen_server(sock):
     global curID
@@ -90,11 +97,13 @@ def always_listen_server(sock):
             print(response)
             sock.send(response.encode('utf-8'))
         elif result['action'] == 'fl':
-            print(result['name'])
+            process_file_name(result)
+            print('Recieve file from:',result['from'],' file name:',result['name'])
             reponse = json.dumps({'action':'fl','from':str(curID),'body':'已收到檔案資訊'})
 #            print(mata)
             sock.send(reponse.encode('utf-8'))
             now_size = 0
+            
             
             while now_size < result['length']:
                 fi_rc = recv_byte(sock)
