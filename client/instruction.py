@@ -38,8 +38,7 @@ def new_to_server(data):
     
     return sock
 
-
-def recv_from_server(sock):
+def recv_byte(sock):
     global SayGoodBye
     Bufsize = array.array('i',[0])
 
@@ -53,7 +52,10 @@ def recv_from_server(sock):
 #    print(bufsize)
     dataByte = b''
     dataByte = sock.recv(bufsize)
+    return dataByte
 
+def recv_from_server(sock):
+    dataByte = recv_byte(sock)
     dataStr = str(dataByte,'utf-8')
     return dataStr
 
@@ -86,7 +88,7 @@ def always_listen_server(sock):
             sock.send(response.encode('utf-8'))
             now_size = 0
             while now_size < result['length']:
-                fi_rc = sock.recv(4096)
+                fi_rc = recv_byte(sock)
                 now_size += 4096
                 print(fi_rc)
             response = json.dumps({'action':'fl','from':str(curID),'body':'已收到檔案'})
@@ -116,14 +118,16 @@ def send_one_file(user,fname):
     ackDict = {'action':'fl', 'to':str(user), 'from':str(curID), 'time' : time.time(),'length': totalsize , 'name':fname}
     sock = new_to_server( json.dumps(ackDict) ) 
     result = json.loads(recv_from_server(sock))
+
+    print(result['body'])
     if result['body'] != '檔案資訊傳送成功':
         return
-    print(result['body'])
 
     now_size = 0
     with open(fname,'rb') as f:
         while now_size < totalsize:
             byte = f.read(4096)
+            print('rdout:'+ str(byte))
             sock.send(byte)
             now_size += 4096
     
