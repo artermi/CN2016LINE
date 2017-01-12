@@ -366,7 +366,8 @@ def handleMsg(sock):
         for key in IDsocket:
             if sock in IDsocket[key]:
                 IDsocket[key].remove(sock)  # remove sock from the client's list
-        watching.remove(sock)
+        if sock not in watching:
+            watching.remove(sock)
         HandlingMsg.remove(sock)
         return
 
@@ -408,7 +409,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
     
         while True:
                 try:
-                        rlist, wlist, xlist = select.select(watching, [], [])
+                        rlist, wlist, xlist = select.select(watching.copy(), [], [])
 
                         for sock in rlist:
                                 if sock == server:  # new connection set up
