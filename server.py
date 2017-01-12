@@ -114,6 +114,7 @@ def login(sock, data):
 
 def msg(sock, data):
     global IDsocket
+    global HandlingMsg
     
     dataStr = json.dumps(data)
     
@@ -172,6 +173,8 @@ def msg(sock, data):
     success = 0
     
     for client in IDsocket[data['to']]: # send message to receiver's all online clients
+        handleMsg.append(client.fileno())
+        
         client.send(dataStr.encode('utf-8'))
         
         resBi = b''
@@ -187,6 +190,8 @@ def msg(sock, data):
         res = json.loads(resStr)
         if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
             success += 1
+        
+        handleMsg.remove(client.fileno())
             
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送失敗'}
