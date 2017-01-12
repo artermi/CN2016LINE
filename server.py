@@ -366,9 +366,9 @@ def handleMsg(sock):
         for key in IDsocket:
             if sock in IDsocket[key]:
                 IDsocket[key].remove(sock)  # remove sock from the client's list
-        if sock not in watching:
+        if sock in watching:
             watching.remove(sock)
-        HandlingMsg.remove(sock)
+        HandlingMsg.remove(sock.fileno)
         return
 
     data = json.loads(dataStr)
@@ -384,7 +384,7 @@ def handleMsg(sock):
         history(sock, data)
     elif data['action'] == 'logout':    
         logout(sock, data)
-    HandlingMsg.remove(sock)
+    HandlingMsg.remove(sock.fileno)
     
 def loadMembers():
     global IDpw
@@ -399,29 +399,29 @@ def loadMembers():
         IDsocket = copy.deepcopy(IDlist)
     
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
-        loadMembers()
-    
-        server.bind((HOST, PORT))
-        server.listen(1024)
-        print(str(socket.gethostbyname(socket.gethostname())+':'+str(PORT)))
-    
-        watching.append(server)
-    
-        while True:
-                try:
-                        rlist, wlist, xlist = select.select(watching.copy(), [], [])
+    loadMembers()
 
-                        for sock in rlist:
-                                if sock == server:  # new connection set up
-                                        conn, addr = server.accept()
-                                        watching.append(conn)
-                                        print('Connected by', addr)
-                    
-                                elif sock not in HandlingMsg:   # check if other threads are handling sock
-                                        HandlingMsg.append(sock)
-                                        thread = threading.Thread(target = handleMsg, args = (sock,))
-                                        thread.start()
-                except KeyboardInterrupt:
-                        print('server shut down')
-                        break
-                
+    server.bind((HOST, PORT))
+    server.listen(1024)
+    print(str(socket.gethostbyname(socket.gethostname())+':'+str(PORT)))
+
+    watching.append(server)
+
+    while True:
+        try:
+            rlist, wlist, xlist = select.select(watching, [], [])
+
+            for sock in rlist:
+                if sock.fileno() == server.fileno():  # new connection set up
+                    conn, addr = server.accept()
+                    watching.append(conn)
+                    print('Connected by', addr)
+    
+                elif sock.fileno() not in HandlingMsg:   # check if other threads are handling sock
+                    HandlingMsg.append(sock.fileno())
+                    thread = threading.Thread(target = handleMsg, args = (sock,))
+                    thread.start()
+        except KeyboardInterrupt:
+            print('server shut down')
+            break
+            
