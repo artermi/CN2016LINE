@@ -17,7 +17,7 @@ IDsocket = dict({}) # the mapping from ID to connecting sockets
 HandlingMsg = []    # this record the sockets currently in the handleMsg state
 
 HOST = ''
-PORT = 5566
+PORT = 9487
 
 watching = []   # the input reading list used for select
 
@@ -173,7 +173,7 @@ def msg(sock, data):
     success = 0
     
     for client in IDsocket[data['to']]: # send message to receiver's all online clients
-        handleMsg.append(client.fileno())
+        HandlingMsg.append(client.fileno())
         
         client.send(dataStr.encode('utf-8'))
         
@@ -191,7 +191,7 @@ def msg(sock, data):
         if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
             success += 1
         
-        handleMsg.remove(client.fileno())
+        HandlingMsg.remove(client.fileno())
             
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送失敗'}
