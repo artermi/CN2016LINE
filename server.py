@@ -272,8 +272,6 @@ def fl(sock, data):
         if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案資訊':
             success += 1
             
-        HandlingMsg.remove(client.fileno())
-            
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送失敗'}
         ack = json.dumps(ackDict)
@@ -297,8 +295,6 @@ def fl(sock, data):
         receivedLen += recvLen
         
         for client in IDsocket[data['to']]:
-            HandlingMsg.append(client.fileno())
-            
             sock.send(buff.encode('utf-8'))
     
     success = 0
