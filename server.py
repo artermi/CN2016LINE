@@ -8,6 +8,7 @@ import fcntl
 import copy
 import subprocess
 import codecs
+import array, termios
 
 BUFF_SIZE = 4096
 IDpw = dict({}) # the ID-password mapping
@@ -49,7 +50,6 @@ def register(sock, data):
         ackDict = {'action' : 'register', 'to' : data['from'], 'time' : time.time(), 'body' : '此帳號已註冊'}
         ack = json.dumps(ackDict)
         print(ack)
-        sock.send((format(len(ack.encode('utf-8')),'d').zfill(256)).encode('utf-8'))
         sock.send(ack.encode('utf-8'))
         return
         
@@ -65,9 +65,9 @@ def register(sock, data):
         
     ackDict = {'action' : 'register', 'to' : data['from'], 'time' : time.time(), 'body' : '註冊成功'}
     ack = json.dumps(ackDict)
-    sock.send((format(len(ack.encode('utf-8')),'d').zfill(256)).encode('utf-8'))
+#    sock.send((format(len(ack.encode('utf-8')),'d').zfill(256)).encode('utf-8'))
 
-    sock.send(ack.encode())
+    sock.send(ack.encode('utf-8'))
 
 def login(sock, data):
     global IDpw
@@ -344,18 +344,17 @@ def handleMsg(sock):
     global watching
     global IDsocket
    
-    dataMata = sock.recv(256)
+    Bufsize = array.array('i',[0])
+    
     dataStr = ''
-    if dataMata:
-        print(dataMata)
-        dataSize = int(str(dataMata,'utf-8'))
-        print(dataSize)
-
-        dataByte = b''
-        dataByte = sock.recv(dataSize)
-        dataStr = str(dataByte,'utf-8')
-
-        print(dataStr)
+    if fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1) != -1:
+        bufsize = Bufsize[0]
+        if bufsize != 0:
+            print(bufsize)
+            dataByte = b''
+            dataByte = sock.recv(bufsize)
+            dataStr = str(dataByte,'utf-8')
+            print(dataStr)
         
     if dataStr == '':   # client socket closed
         for key in IDsocket:

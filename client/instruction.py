@@ -1,5 +1,5 @@
 #coding: utf-8
-import socket,sys,errno,termios
+import socket,sys,fcntl,errno,termios
 import json,array
 
 
@@ -15,8 +15,8 @@ def send_to_server(data):
     print(data)
 #    print(len(data))
 #    get_bin = lambda x, n:format(x,'b').zfill(n)
-    matadata = format(len(data.encode('utf-8')),'d').zfill(256)
-    print(matadata.encode('utf-8'))
+#    matadata = format(len(data.encode('utf-8')),'d').zfill(256)
+#    print(matadata.encode('utf-8'))
     
     try:
         sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -39,16 +39,19 @@ def send_to_server(data):
 
 def recv_from_server(sock):
     Bufsize = array.array('i',[0])
-    fcntl.ioctl(sock,terminos.FIONREAD, Bufsize,1)
-    bufsize = Bufsize[0]
 
+    while True:
+        fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
+        bufsize = Bufsize[0]
+        if bufsize != 0:
+            break
+#    print(bufsize)
     dataByte = b''
-    dataByte = sock.recv(bufsizq)
+    dataByte = sock.recv(bufsize)
 
     dataStr = str(dataByte,'utf-8')
 
     sock.close()
-    print(dataByte)
     print(dataStr)
     return(dataStr)
 
