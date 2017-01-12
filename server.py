@@ -176,17 +176,20 @@ def msg(sock, data):
         HandlingMsg.append(client.fileno())
         
         client.send(dataStr.encode('utf-8'))
-        
+
         resBi = b''
         Bufsize = array.array('i',[0])
         while True:
-            fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
-            if Bufsize != 0:
+            fcntl.ioctl(client,termios.FIONREAD, Bufsize,1)
+            if Bufsize[0] != 0:
                 break
         bufsize = Bufsize[0]
-        
+
+        print(bufsize)
+
         resBi = client.recv(bufsize)
         resStr = str(resBi, 'utf-8')
+        print('response:'+ resStr)
         res = json.loads(resStr)
         if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
             success += 1
@@ -256,7 +259,7 @@ def fl(sock, data):
         Bufsize = array.array('i',[0])
         while True:
             fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
-            if Bufsize != 0:
+            if Bufsize[0] != 0:
                 break
         bufsize = Bufsize[0]
         resBi = client.recv(bufsize)
