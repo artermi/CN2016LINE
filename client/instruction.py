@@ -6,6 +6,7 @@ import time
 import threading
 import ast
 import random
+import hashlib
 
 curID = ''
 SayGoodBye = False
@@ -282,7 +283,7 @@ def logout(sock):
 
 
 def register(ID,pw):
-    ackDict = {'action':'register','from':str(ID) ,'pw':str(pw)}
+    ackDict = {'action':'register','from':str(ID) ,'pw':hashlib.sha224(str(pw).encode('utf-8')).hexdigest() }
     sock = new_to_server(json.dumps(ackDict))
     result = json.loads(recv_and_close(sock))
     print(result['body'])
@@ -292,7 +293,7 @@ def login(ID,pw):
     global SayGoodBye
     SayGoodBye = False
     global curID
-    ackDict = {'action':'login','from':str(ID), 'pw':str(pw)}
+    ackDict = {'action':'login','from':str(ID), 'pw': hashlib.sha224(str(pw).encode('utf-8')).hexdigest()}
     sock = new_to_server(json.dumps(ackDict))
     result = json.loads( recv_from_server(sock) ) 
 #    print(recv_msg)
