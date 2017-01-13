@@ -192,7 +192,8 @@ def msg(user,msg):
     if result['body'] == '訊息傳送成功':
         print('已讀')
 
-    print(result['body'])
+    if user != 'miku':
+        print(result['body'])
 #    print('需要我幫忙嗎><(打\'teach\'讓我教你怎麼打指令)')
 
 def send_one_file(user,fname):
