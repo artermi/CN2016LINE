@@ -69,6 +69,7 @@ def recv_from_server(sock):
 #        print('rfv die')
         return '{"action":"bye"}'
     dataStr = str(dataByte,'utf-8')
+#    print(dataStr)
     return dataStr
 
 
@@ -178,7 +179,7 @@ def history(user):
         if need['action'] == 'msg':
             print(need['from'],'說   :',need['body'],'   ' + time.asctime( time.localtime(need['time']) ))
         elif need['action'] == 'fl':
-            print(need['from'],'寄了了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
+            print(need['from'],'寄完了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
             
 
 
@@ -267,7 +268,7 @@ def register(ID,pw):
     sock = new_to_server(json.dumps(ackDict))
     result = json.loads(recv_and_close(sock))
     print(result['body'])
-    print(result['time'])
+    print(time.asctime( time.localtime(result['time']) ))
 
 def login(ID,pw):
     global SayGoodBye

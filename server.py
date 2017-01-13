@@ -476,7 +476,13 @@ def handleMsg(sock):
         print('closing socket:\n', sock)
         for key in IDsocket:
             if sock in IDsocket[key]:
-                IDsocket[key].remove(sock)  # remove sock from the client's list
+                try:
+                    sock.send('{"action":"try"}'.encode('utf-8'))
+                except socket.error as e:
+                    print(e)
+                    IDsocket[key].remove(sock)  # remove sock from the client's list
+                except IOError:
+                        IDsocket[key].remove(sock)  # remove sock from the client's list
                 print(key,sock)
         if sock in watching:
             watching.remove(sock)
