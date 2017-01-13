@@ -73,7 +73,7 @@ def recv_from_server(sock):
 def recv_and_close(sock):
     dataStr = recv_from_server(sock)
 #    sock.close()
-#    print(dataStr)
+    print(dataStr)
     return(dataStr)
 
 def process_file_name(fresult):
@@ -104,6 +104,7 @@ def feasible_name(fname):
 
 def recv_and_create_file(sock,total_size,fname):
     now_size = 0
+    old_name = fname
     fname = feasible_name(fname)
     
     with open(fname,'wb') as f:
@@ -112,11 +113,13 @@ def recv_and_create_file(sock,total_size,fname):
             fi_rc = recv_byte(sock)
             f.write(fi_rc)
             now_size += len(fi_rc)
-            print(total_size,now_size)
-            print(fi_rc,'\n=============================')
-
+#            print(total_size,now_size)
+#            print(fi_rc,'\n=============================')
+            print('檔案 %s 收到der進度:' %old_name ,str('{:.1%}'.format(now_size/total_size)))
 
     if now_size >= total_size:
+        if old_name != fname :
+            print('P.S. 因為檔名重複，所以檔名現在改成',fname[9:],'喔~~~')
         return True
     else:
         return False
@@ -130,31 +133,19 @@ def always_listen_server(sock):
         recved = recv_from_server(sock)
         result = json.loads(recved)
         if result['action'] == 'msg':
-            print(result['from'],'說:',result['body'])
+            print(result['from'],'說:',result['body'],'\n' + time.asctime( time.localtime(result['time']) ))
             response = json.dumps({'action':'msg','from':str(curID),'body':'已收到訊息'})
-#            print(response)
+
             sock.send(response.encode('utf-8'))
             print('需要我幫忙嗎~~(打\'teach\'讓我教你怎麼打指令)')
         elif result['action'] == 'fl':
             process_file_name(result)
-            print('Recieve file from:',result['from'],' file name:',result['name'])
+            print('收到檔案資訊 來自:',result['from'],' 檔名:',result['name'])
             reponse = json.dumps({'action':'flinfo','from':str(curID),'body':'已收到檔案資訊'})
-#            print(mata)
+
             sock.send(reponse.encode('utf-8'))
             recv_success = recv_and_create_file(sock,result['length'],result['name'])
 
-
-#            now_size = 0
-#            while now_size < result['length']:
-        #        if result['length'] - now_size < 4096:
-        #            fi_rc = sock.recv(result['length'] - now_size)
-         #       else: 
-#                fi_rc = sock.recv(4096)
- #               fi_rc = recv_byte(sock)
-
-  #              now_size += len(fi_rc)
-   #             print(result['length'],now_size)
-    #            print(fi_rc,'\n=============================')
 
             if not recv_success:
                 response = json.dumps({'action':'flres','from':str(curID),'body':'沒收到檔案'})
@@ -163,6 +154,7 @@ def always_listen_server(sock):
                 print('需要我幫忙嗎~~(打\'teach\'讓我教你怎麼打指令)')
                 continue
 
+            print('成功收到檔案',result['name'])
             response = json.dumps({'action':'flres','from':str(curID),'body':'已收到檔案'})
             sock.send(response.encode('utf-8'))
             print('需要我幫忙嗎~~(打\'teach\'讓我教你怎麼打指令)')
@@ -194,7 +186,11 @@ def msg(user,msg):
 
 def send_one_file(user,fname):
     global curID
+    if not os.path.exists(fname):
+        print('泥打的檔名',fname,'不存在> <')
+        return
     totalsize = os.path.getsize(fname)
+
 
     ackDict = {'action':'fl', 'to':str(user), 'from':str(curID), 'time' : time.time(),'length': totalsize , 'name':fname}
     sock = new_to_server( json.dumps(ackDict) ) 
@@ -234,7 +230,7 @@ def fl(user, fnames):
 
     for th in fthread:
         th.join()
-    print('檔案處理結束束><')
+    print('檔案處理結束束> <')
 #    print('需要我幫忙嗎><(打\'teach\'讓我教你怎麼打指令)')
 
 

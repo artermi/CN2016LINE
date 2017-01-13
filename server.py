@@ -427,6 +427,7 @@ def history(sock, data):
     ackDict = {'action' : 'history', 'to' : data['from'], 'time' : time.time(), 'body' : body}  # send log to client
     ack = json.dumps(ackDict)
     sock.send(ack.encode('utf-8'))
+    print(ackDict)
 
 def logout(sock, data):
     global IDsocket 

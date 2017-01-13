@@ -81,7 +81,7 @@ def main_program():
                     print('掰掰~~ 我會想念你der~~~')
                     return False
             else:
-                print('Parden??')
+                print('公三小??')
 
 while not main_program():
     pass
