@@ -125,8 +125,17 @@ def msg(sock, data):
     
     if data['to'] not in IDsocket:  # account not existing
         if data['to'] == 'miku':
-           miku.chat(sock,data) 
-           return
+            
+            mikuStr = miku.miku_random_msg_str()
+            resDict = {'action' : 'msg', 'from' : 'miku', 'to' : data['from'], 'time' : time.time(), 'body' : mikuStr}
+            res = json.dumps(resDict)
+            sock.send(res.encode('utf-8'))
+
+            ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送成功'}
+            ack = json.dumps(ackDict)
+            sock.send(ack.encode('utf-8'))
+            
+
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
         sock.send(ack.encode('utf-8'))

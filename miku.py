@@ -31,7 +31,7 @@ def miku(msg):
         tmp = strlen(i)
         if tmp > max_line_len:
             max_line_len = tmp
-        
+    
     line_count = 0
     endmsg = False
     endbubble1 = False
@@ -74,6 +74,68 @@ def miku(msg):
     if not endbubble2:
         print(block,                              '              ¯¯¯¯' + '¯' * max_line_len +                               '¯¯¯¯¯')
         endbubble2 = True
+
+def miku_str(msg):
+    with open('miku', 'r') as f:
+        list = f.readlines()
+    
+    block = ' ' * strlen(list[2].split('\n')[0])
+    #print(msg)
+    msg_list = msg.split('\n')
+    #print(msg_list)
+    
+    max_line_len = 0
+    for i in msg_list:
+        tmp = strlen(i)
+        if tmp > max_line_len:
+            max_line_len = tmp
+    
+    retStr = ''
+    
+    line_count = 0
+    endmsg = False
+    endbubble1 = False
+    endbubble2 = False
+    i = 0
+    while i < len(list):
+        
+        if line_count < 24:
+            retStr = retStr + list[i].split('\n')[0] + '\n'
+        elif line_count == 24:
+            retStr = retStr + list[i].split('\n')[0] +         '              ____' + '_' * max_line_len +                               '_____' + '\n'
+        elif line_count == 25:
+            retStr = retStr + list[i].split('\n')[0] +         '            ／    ' + ' ' * max_line_len +                               '     ＼' + '\n'
+        elif line_count == 26 and not endmsg:
+            for element in msg_list:
+                if line_count == 26:
+                    retStr = retStr + list[i].split('\n')[0] + '          ＜      ' + element + ' ' * (max_line_len - strlen(element)) + '      ｜' + '\n'
+                elif i < len(list):
+                    retStr = retStr + list[i].split('\n')[0] + '           ｜     ' + element + ' ' * (max_line_len - strlen(element)) + '      ｜' + '\n'
+                else:
+                    retStr = retStr + block +                  '           ｜     ' + element + ' ' * (max_line_len - strlen(element)) + '      ｜' + '\n'
+                i += 1
+                line_count += 1
+            endmsg = True
+            i -= 1
+        elif line_count > 26 and endmsg and not endbubble1:
+            retStr = retStr + list[i].split('\n')[0] +         '            ＼    ' + ' ' * max_line_len +                               '     ／' + '\n'
+            endbubble1 = True
+        elif line_count > 26 and endmsg and not endbubble2:
+            retStr = retStr + list[i].split('\n')[0] +         '              ¯¯¯¯' + '¯' * max_line_len +                               '¯¯¯¯¯' + '\n'
+            endbubble2 = True
+        elif endbubble1 and endbubble1:
+            retStr = retStr + list[i].split('\n')[0]
+        line_count += 1
+        i += 1
+        
+    if not endbubble1:
+        retStr = retStr + block +                              '            ＼    ' + ' ' * max_line_len +                               '     ／' + '\n'
+        endbubble1 = True
+    if not endbubble2:
+        retStr = retStr + block +                              '              ¯¯¯¯' + '¯' * max_line_len +                               '¯¯¯¯¯' + '\n'
+        endbubble2 = True
+        
+    return retStr
         
 def miku_random_msg():
     with open('miku_msg', 'r') as f:
@@ -84,6 +146,16 @@ def miku_random_msg():
         miku_msg_list.append(json.loads(i))
     print(miku_msg_list)
     miku(random.choice(miku_msg_list))
+    
+def miku_random_msg_str():
+    with open('miku_msg', 'r') as f:
+        miku_msg_str = f.readlines()
+    
+    miku_msg_list = []
+    for i in miku_msg_str:
+        miku_msg_list.append(json.loads(i))
+    #print(miku_msg_list)
+    return miku_str(random.choice(miku_msg_list))
 
-miku_random_msg()
+#miku_random_msg()
 #miku('嗨，肥宅！\n你沒有妹妹\n(╬ﾟдﾟ)╭∩╮')
