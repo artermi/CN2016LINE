@@ -290,6 +290,7 @@ def fl(sock, data):
         t_end = time.time() + 3 #timr out in 3sec
         while time.time() < t_end:
             lock.acquire()
+
             print(data['name'],'wants handling on',client.fileno())
             if client.fileno() not in HandlingMsg:
                 HandlingMsg.append(client.fileno())
