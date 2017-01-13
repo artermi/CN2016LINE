@@ -4,6 +4,7 @@ import json,array
 import select
 import time
 import threading
+import ast
 
 curID = ''
 SayGoodBye = False
@@ -73,7 +74,7 @@ def recv_from_server(sock):
 def recv_and_close(sock):
     dataStr = recv_from_server(sock)
 #    sock.close()
-    print(dataStr)
+#    print(dataStr)
     return(dataStr)
 
 def process_file_name(fresult):
@@ -167,10 +168,20 @@ def always_listen_server(sock):
 
 def history(user): 
     global curID
+
     ackDict = {'action':'history', 'to':str(user), 'from':str(curID), 'time' : time.time()}
     sock = new_to_server( json.dumps(ackDict) ) 
     result = json.loads(recv_and_close(sock))
-    print(result['body'])
+    for his in result['body']:
+        need = json.loads(his.rstrip())
+        if need['action'] == 'msg':
+            print(need['from'],'說   :',need['body'],'   ' + time.asctime( time.localtime(need['time']) ))
+        elif need['action'] == 'fl':
+            print(need['from'],'寄了了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
+            
+
+
+#    print(result['body'])
 #    print('需要我幫忙嗎><(打\'teach\'讓我教你怎麼打指令)')
 
 def msg(user,msg):
@@ -260,11 +271,20 @@ def login(ID,pw):
     global curID
     ackDict = {'action':'login','from':str(ID), 'pw':str(pw)}
     sock = new_to_server(json.dumps(ackDict))
-    recv_msg = json.loads( recv_from_server(sock) ) 
+    result = json.loads( recv_from_server(sock) ) 
 #    print(recv_msg)
-    print(recv_msg['body'])
+    if type(result['body']) is list:
+        print('有未讀訊息喔~~~~')
+        for his in result['body']:
+            need = json.loads(his.rstrip())
+            if need['action'] == 'msg':
+                print(need['from'],'說:',need['body'],'   ' + time.asctime( time.localtime(need['time']) ))
+            elif need['action'] == 'fl':
+                print(need['from'],'寄了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
+    else:
+        print(result['body'])
 
-    if recv_msg['body'] != '無此帳號' and recv_msg['body'] != '密碼錯誤':
+    if result['body'] != '無此帳號' and result['body'] != '密碼錯誤':
         curID = ID
         return {'login':True, 'socket' : sock}
     else: 
