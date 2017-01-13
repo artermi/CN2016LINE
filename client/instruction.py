@@ -10,6 +10,8 @@ import random
 curID = ''
 SayGoodBye = False
 
+name_lock = threading.Lock()
+
 def create_connection():
     f = open ('ServerID','r')
     socketID = f.readline()
@@ -89,9 +91,11 @@ def process_file_name(fresult):
         fresult['name'] = named2[-1]
 
 def feasible_name(fname):
+    name_lock.acquire()
     if not os.path.isdir('Download'):
         os.mkdir('Download')
     new_path = 'Download/'+fname
+
     fnum = 1
     while os.path.exists(new_path):
         test_name = fname.partition('.')
@@ -100,6 +104,7 @@ def feasible_name(fname):
         else:
             new_path = 'Download/'+fname +'_'+str(fnum)
         fnum = fnum +1
+    name_lock.release()
 
     return new_path
     
