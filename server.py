@@ -24,7 +24,7 @@ PORT = 9487
 
 watching = []   # the input reading list used for select
 
-lock = threading.allocate_lock() # Use lock to lock the socket_fd
+lock = threading.Lock() # Use lock to lock the socket_fd
 
 def dumpMembers():
     global IDpw
@@ -181,8 +181,24 @@ def msg(sock, data):
     success = 0
     
     for client in IDsocket[data['to']]: # send message to receiver's all online clients
-        HandlingMsg.append(client.fileno())
-        
+
+        get_client = False
+        t_end = time.time() + 3 #timr out in 3sec
+        while time.time() < t_end:
+            lock.acquire()
+            if client.fileno() not in HandlingMsg:
+                HandlingMsg.append(client.fileno())
+                get_client = True
+                lock.release()
+                break
+            lock.release()
+
+        if not get_client:
+            ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送失敗'}
+            ack = json.dumps(ackDict)
+            sock.send(ack.encode('utf-8'))
+            return
+
         client.send(dataStr.encode('utf-8'))
 
         resBi = b''
@@ -194,15 +210,22 @@ def msg(sock, data):
                 break
 
         print(bufsize)
-
-        resBi = client.recv(bufsize)
-        resStr = str(resBi, 'utf-8')
-        print('response:'+ resStr)
-        res = json.loads(resStr)
-        if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
-            success += 1
         
+        client.settimeout(2)
+        try:
+            resBi = client.recv(bufsize)
+            resStr = str(resBi, 'utf-8')
+            print('response:'+ resStr)
+            res = json.loads(resStr)
+            if res['action'] == 'msg' and res['from'] == data['to'] and res['body'] == '已收到訊息':
+                success += 1
+        except socket.timeout:
+            print('%s :訊息傳送失敗' % data['to'])
+        client.settimeout(None)
+
+        lock.acquire()
         HandlingMsg.remove(client.fileno())
+        lock.release()
             
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送失敗'}
@@ -263,13 +286,26 @@ def fl(sock, data):
     
     for client in IDsocket[data['to']]: # send metafile to receiver's all online clients
 
-        while True:
+        get_client = False
+        t_end = time.time() + 3 #timr out in 3sec
+        while time.time() < t_end:
             lock.acquire()
-            if client not in HandlingMsg:
+            print(data['name'],'wants handling on',client.fileno())
+            if client.fileno() not in HandlingMsg:
                 HandlingMsg.append(client.fileno())
+                get_client = True
+                print('Now who get what:',data['name'],client.fileno())
                 lock.release()
                 break
+            print(data['name'],'not handling on',client.fileno())
             lock.release()
+
+        if not get_client:
+            ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送失敗'}
+            ack = json.dumps(ackDict)
+            sock.send(ack.encode('utf-8'))
+            return
+
         
         client.send(dataStr.encode('utf-8'))
         
@@ -281,12 +317,13 @@ def fl(sock, data):
             if bufsize != 0:
                 break
 
-        client.settimeout(2) ##set the file send timeout in 2 second
+        client.settimeout(5) ##set the file send timeout in 2 second
+
         try:
             resBi = client.recv(bufsize)
             resStr = str(resBi, 'utf-8')
         except socket.timeout:
-            print('connect to %s timeout',% data['to'])
+            print('connect to %s timeout' % data['to'])
             resStr = '{"action":"fucked"}'
             lock.acquire()
             client.settimeout(None)
@@ -294,8 +331,11 @@ def fl(sock, data):
             lock.release()
 
         res = json.loads(resStr)
-        if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案資訊':
+        if res['action'] == 'flinfo' and res['from'] == data['to'] and res['body'] == '已收到檔案資訊':
             success += 1
+        else:
+            print('幹 收得有問題')
+            print(resStr)
             
     if success != len(IDsocket[data['to']]):
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送失敗'}
@@ -337,16 +377,19 @@ def fl(sock, data):
             resBi = client.recv(bufsize)
             resStr = str(resBi, 'utf-8')
         except socket.timeout:
-            print('connect to %s timeout',% data['to'])
+            print('send file to %s timeout' % data['to'])
             resStr = '("action":"timeout"}'
 
         res = json.loads(resStr)
-        if res['action'] == 'fl' and res['from'] == data['to'] and res['body'] == '已收到檔案':
+        if res['action'] == 'flres' and res['from'] == data['to'] and res['body'] == '已收到檔案':
             success += 1
+
+        print(resStr)
 
         lock.acquire()
         client.settimeout(None)
         HandlingMsg.remove(client.fileno())
+        print('finish handling on',client.fileno())
         lock.release()
             
     if success != len(IDsocket[data['to']]):
@@ -398,6 +441,8 @@ def handleMsg(sock):
     global HandlingMsg
     global watching
     global IDsocket
+
+    print('Handling:\n',sock)
    
     Bufsize = array.array('i',[0])
     fcntl.ioctl(sock,termios.FIONREAD, Bufsize,1)
@@ -407,11 +452,13 @@ def handleMsg(sock):
     dataBi = sock.recv(bufsize)
     dataStr = str(dataBi,'utf-8')
     print(dataStr)
-        
+
     if dataStr == '':   # client socket accidentally closed
+        print('closing socket:\n', sock)
         for key in IDsocket:
             if sock in IDsocket[key]:
                 IDsocket[key].remove(sock)  # remove sock from the client's list
+                print(key,sock)
         if sock in watching:
             watching.remove(sock)
         lock.acquire()
@@ -432,9 +479,12 @@ def handleMsg(sock):
         history(sock, data)
     elif data['action'] == 'logout':    
         logout(sock, data)
+    else:
+        print('寄錯地方')
     lock.acquire()
     HandlingMsg.remove(sock.fileno())
     lock.release()
+    print('finish handling')
     
 def loadMembers():
     global IDpw
@@ -468,11 +518,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
                     print('Connected by', addr)
     
                 elif sock.fileno() not in HandlingMsg:   # check if other threads are handling sock
-                    lock.aquire()
+                    lock.acquire()
                     HandlingMsg.append(sock.fileno())
                     lock.release()
                     thread = threading.Thread(target = handleMsg, args = (sock,))
                     thread.start()
+
         except KeyboardInterrupt:
             print('server shut down')
             break
