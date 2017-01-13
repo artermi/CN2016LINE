@@ -17,7 +17,7 @@ IDlist = dict({})   # this is an empty version of IDsocket, used for IDsocket to
 IDsocket = dict({}) # the mapping from ID to connecting sockets
 HandlingMsg = []    # this record the sockets currently in the handleMsg state
 
-
+mikuList = dict({})
 
 HOST = ''
 PORT = 9487
@@ -50,6 +50,7 @@ def register(sock, data):
     global IDpw
     global IDlist
     global IDsocket
+    global MikuList
     
     if data['from'] in IDpw:    # ID already registered
         ackDict = {'action' : 'register', 'to' : data['from'], 'time' : time.time(), 'body' : '此帳號已註冊'}
@@ -61,6 +62,7 @@ def register(sock, data):
     IDpw[data['from']] = data['pw']
     IDlist[data['from']] = []
     IDsocket[data['from']] = []
+    MikuList[data['from']] = []
     
     dumpMembers()   # add new account information into f 'Members'
     
@@ -120,6 +122,7 @@ def login(sock, data):
 def msg(sock, data):
     global IDsocket
     global HandlingMsg
+    global MikuList
     
     dataStr = json.dumps(data)
     
@@ -129,12 +132,14 @@ def msg(sock, data):
             mikuStr = miku.miku_random_msg_str()
             resDict = {'action' : 'msg', 'from' : 'miku', 'to' : data['from'], 'time' : time.time(), 'body' : mikuStr}
             res = json.dumps(resDict)
+            print(res)
             sock.send(res.encode('utf-8'))
+            sleep(0.1)
 
             ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '訊息傳送成功'}
             ack = json.dumps(ackDict)
             sock.send(ack.encode('utf-8'))
-            
+            return
 
         ackDict = {'action' : 'msg', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
@@ -207,6 +212,11 @@ def msg(sock, data):
             ack = json.dumps(ackDict)
             sock.send(ack.encode('utf-8'))
             return
+
+        if data['to'] in MikuList and data['from'] in MikuList[data['to']]:
+            newBody = miku.miku_str(str(data['body']))
+            data['body'] = newBody
+            dataStr = json.dumps(data)
 
         client.send(dataStr.encode('utf-8'))
 
@@ -438,6 +448,24 @@ def history(sock, data):
     sock.send(ack.encode('utf-8'))
 #    print(ackDict)
 
+def hatsune(sock, data):
+    global MikuList
+    
+    if data['to'] not in MikuList:  # account not existing
+        ackDict = {'action' : 'miku', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
+        ack = json.dumps(ackDict)
+        sock.send(ack.encode('utf-8'))
+        return
+    
+    if data['to'] not in MikuList[data['from']]:
+        MikuList[data['from']].append(data['to'])
+    else:
+        MikuList[data['from']].remove(data['to'])
+        
+    ackDict = {'action' : 'miku', 'to' : data['from'], 'time' : time.time(), 'body' : 'Miku設定成功'}  # set client as Miku
+    ack = json.dumps(ackDict)
+    sock.send(ack.encode('utf-8'))
+
 def logout(sock, data):
     global IDsocket 
     IDsocket[data['from']].remove(sock) # remove sock from the client's list
@@ -451,6 +479,7 @@ def handleMsg(sock):
     global HandlingMsg
     global watching
     global IDsocket
+    global MikuList
 
     print('Handling:\n',sock)
    
@@ -487,6 +516,8 @@ def handleMsg(sock):
         fl(sock, data)
     elif data['action'] == 'history':   
         history(sock, data)
+    elif data['action'] == 'miku':   
+        hatsune(sock, data)
     elif data['action'] == 'logout':    
         logout(sock, data)
     else:
@@ -500,6 +531,7 @@ def loadMembers():
     global IDpw
     global IDlist
     global IDsocket
+    global MikuList
     
     with open('storage/Members', 'r') as f: # load IDpw and IDlist from file 'Members', line by line; initialize IDsocket
         IDpwStr = f.readline()
@@ -507,6 +539,7 @@ def loadMembers():
         IDlistStr = f.readline()
         IDlist = json.loads(IDlistStr)
         IDsocket = copy.deepcopy(IDlist)
+        MikuList = copy.deepcopy(IDlist)
     
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
     loadMembers()

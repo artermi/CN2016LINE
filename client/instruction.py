@@ -134,6 +134,8 @@ def always_listen_server(sock):
         recved = recv_from_server(sock)
         result = json.loads(recved)
         if result['action'] == 'msg':
+            #if result['from'] == 'miku':
+            #    print(result['body'],'\n' + time.asctime( time.localtime(result['time']) ))
             print(result['from'],'說:',result['body'],'\n' + time.asctime( time.localtime(result['time']) ))
             response = json.dumps({'action':'msg','from':str(curID),'body':'已收到訊息'})
 
@@ -192,9 +194,18 @@ def msg(user,msg):
     if result['body'] == '訊息傳送成功':
         print('已讀')
 
-    if user != 'miku':
+    if user == 'miku' or result['body'] != '訊息傳送成功':
         print(result['body'])
 #    print('需要我幫忙嗎><(打\'teach\'讓我教你怎麼打指令)')
+
+def miku(user):
+    global curID
+    ackDict = {'action':'miku', 'to':str(user), 'from':str(curID), 'time' : time.time()}
+    sock = new_to_server( json.dumps(ackDict) ) 
+    result = json.loads(recv_and_close(sock))
+
+    print(result)
+
 
 def send_one_file(user,fname):
     global curID

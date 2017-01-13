@@ -80,6 +80,13 @@ def main_program():
                     continue 
                 inst.fl( cmd[0][6:].strip(),cmd[2])
 
+            elif Idea[:6] == '[miku]':
+                cmd = Idea
+                if cmd[6:].strip() == '':
+                    print('公三小??')
+                    continue 
+                inst.miku( cmd[6:].strip())
+
             elif Idea.strip() == 'logout':
                 success = inst.logout(Result['socket'])
                 if success:

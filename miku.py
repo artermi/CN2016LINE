@@ -17,7 +17,7 @@ def strlen(string):
             
     return len
 
-def miku(msg):
+def _miku(msg):
     with open('miku', 'r') as f:
         list = f.readlines()
     
@@ -124,7 +124,7 @@ def miku_str(msg):
             retStr = retStr + list[i].split('\n')[0] +         '              ¯¯¯¯' + '¯' * max_line_len +                               '¯¯¯¯¯' + '\n'
             endbubble2 = True
         elif endbubble1 and endbubble1:
-            retStr = retStr + list[i].split('\n')[0]
+            retStr = retStr + list[i].split('\n')[0] + '\n'
         line_count += 1
         i += 1
         
@@ -134,7 +134,7 @@ def miku_str(msg):
     if not endbubble2:
         retStr = retStr + block +                              '              ¯¯¯¯' + '¯' * max_line_len +                               '¯¯¯¯¯' + '\n'
         endbubble2 = True
-        
+    print(retStr)    
     return retStr
         
 def miku_random_msg():
@@ -145,7 +145,7 @@ def miku_random_msg():
     for i in miku_msg_str:
         miku_msg_list.append(json.loads(i))
     print(miku_msg_list)
-    miku(random.choice(miku_msg_list))
+    _miku(random.choice(miku_msg_list))
     
 def miku_random_msg_str():
     with open('miku_msg', 'r') as f:
