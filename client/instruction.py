@@ -5,6 +5,7 @@ import select
 import time
 import threading
 import ast
+import random
 
 curID = ''
 SayGoodBye = False
@@ -222,6 +223,8 @@ def send_one_file(user,fname):
             if now_size >= totalsize:
                 now_size = totalsize
             print('檔案 %s 上傳der進度:' %fname ,str('{:.1%}'.format(now_size/totalsize)))
+#            if random.randint(0,4) == 0:
+            time.sleep(0.05)
     
     file_status = json.loads(recv_and_close(sock))
     print('寄給',user,'的檔案',fname,':',file_status['body'])
