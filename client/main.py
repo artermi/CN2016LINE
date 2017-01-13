@@ -12,7 +12,7 @@ def main_program():
     while True:
         Result = False
 
-        ID = input('打你的ID登入,打 \'new\' 來註冊或者打 \'leave\'離開\n指令: ')
+        ID = input('打你的ID登入,打 \'new\' 來註冊或者打 \'bye\'離開\n指令: ')
         ID = ID.strip()
 
         while ID == '':
@@ -20,16 +20,22 @@ def main_program():
             ID = ID.strip()
 
         if ID == 'new':
+
             ID = input('你的 ID: ')
             ID = ID.strip()
-
             while ID.strip() == 'new' or ID == '' or ID == 'leave':
                 ID = input('這個ID不可以啦 > < 請重新輸入:')
                 ID = ID.strip()
 
             Password = input('密碼: ')
+            Password.strip()
+            while Password == '':
+                Password = input('密碼不可以是空白喔~~~ 請重新輸入:')
+                Password.strip()
+
             inst.register(ID,Password)
-        elif ID == 'leave':
+        elif ID == 'bye':
+            print('掰掰~~ 我們下次見~~~')
             return True
         else:
             Password = input('密碼: ')
