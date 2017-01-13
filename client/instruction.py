@@ -206,7 +206,7 @@ def miku(user):
     sock = new_to_server( json.dumps(ackDict) ) 
     result = json.loads(recv_and_close(sock))
 
-    print(result)
+    print(result['body'])
 
 
 def send_one_file(user,fname):
