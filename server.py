@@ -259,10 +259,18 @@ def msg(sock, data):
 def fl(sock, data):
     global IDsocket
     global HandlingMsg
+    global BUFF_SIZE
     
     dataLen = data['length']
     dataStr = json.dumps(data)
+
+    ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送成功'}
+    ack = json.dumps(ackDict)
+    sock.send(ack.encode('utf-8'))
+    #tell the 
     
+
+
     if data['to'] not in IDsocket:  # account not existing
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
         ack = json.dumps(ackDict)
@@ -274,7 +282,7 @@ def fl(sock, data):
         ack = json.dumps(ackDict)
         sock.send(ack.encode('utf-8'))
         return
-        
+
     with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f: # write metafile to log on receiver's side
         while True: # requiring exclusive lock
             try:
@@ -300,6 +308,24 @@ def fl(sock, data):
         f.write(dataStr + '\n')
         
         fcntl.flock(f, fcntl.LOCK_UN)   # release lock
+
+
+    receivedLen = 0
+    recvLen = 0
+
+    buff = [] #firstly recv the file
+    while receivedLen < dataLen:
+        if dataLen - receivedLen < BUFF_SIZE:
+            recvLen = dataLen - receivedLen
+        else:
+            recvLen = BUFF_SIZE
+        
+        buff.append(sock.recv(recvLen))
+        receivedLen += recvLen
+        
+        print(dataLen,receivedLen)
+    
+    
         
     success = 0
     
@@ -310,14 +336,14 @@ def fl(sock, data):
         while time.time() < t_end:
             lock.acquire()
 
-            print(data['name'],'wants handling on',client.fileno())
+#            print(data['name'],'wants handling on',client.fileno())
             if client.fileno() not in HandlingMsg:
                 HandlingMsg.append(client.fileno())
                 get_client = True
                 print('Now who get what:',data['name'],client.fileno())
                 lock.release()
                 break
-            print(data['name'],'not handling on',client.fileno())
+#            print(data['name'],'not handling on',client.fileno())
             lock.release()
 
         if not get_client:
@@ -363,25 +389,16 @@ def fl(sock, data):
         sock.send(ack.encode('utf-8'))
         return
         
-    ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送成功'}
-    ack = json.dumps(ackDict)
-    sock.send(ack.encode('utf-8'))
+#    ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送成功'}
+#    ack = json.dumps(ackDict)
+#    sock.send(ack.encode('utf-8'))
     
     receivedLen = 0
     recvLen = 0
     
-    while receivedLen < dataLen:    # send file to receiver's all online clients
-        if dataLen - receivedLen < BUFF_SIZE:
-            recvLen = dataLen - receivedLen
-        else:
-            recvLen = BUFF_SIZE
-        
-        buff = sock.recv(recvLen)
-        receivedLen += recvLen
-        
-        for client in IDsocket[data['to']]:
-            client.send(buff)
-        print(dataLen,receivedLen)
+    for bifile in buff: 
+         for client in IDsocket[data['to']]:
+             client.send(bifile)
     
     success = 0
     
@@ -497,7 +514,13 @@ def handleMsg(sock):
         print('closing socket:\n', sock)
         for key in IDsocket:
             if sock in IDsocket[key]:
-                IDsocket[key].remove(sock)  # remove sock from the client's list
+                try:
+                    sock.send('{"action":"try"}'.encode('utf-8'))
+                except socket.error as e:
+                    print(e)
+                    IDsocket[key].remove(sock)  # remove sock from the client's list
+                except IOError:
+                        IDsocket[key].remove(sock)  # remove sock from the client's list
                 print(key,sock)
         if sock in watching:
             watching.remove(sock)

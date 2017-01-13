@@ -5,6 +5,7 @@ import select
 import time
 import threading
 import ast
+import random
 
 curID = ''
 SayGoodBye = False
@@ -68,6 +69,7 @@ def recv_from_server(sock):
 #        print('rfv die')
         return '{"action":"bye"}'
     dataStr = str(dataByte,'utf-8')
+#    print(dataStr)
     return dataStr
 
 
@@ -179,7 +181,7 @@ def history(user):
         if need['action'] == 'msg':
             print(need['from'],'說   :',need['body'],'   ' + time.asctime( time.localtime(need['time']) ))
         elif need['action'] == 'fl':
-            print(need['from'],'寄了了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
+            print(need['from'],'寄完了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
             
 
 
@@ -233,6 +235,8 @@ def send_one_file(user,fname):
             if now_size >= totalsize:
                 now_size = totalsize
             print('檔案 %s 上傳der進度:' %fname ,str('{:.1%}'.format(now_size/totalsize)))
+#            if random.randint(0,4) == 0:
+            time.sleep(0.05)
     
     file_status = json.loads(recv_and_close(sock))
     print('寄給',user,'的檔案',fname,':',file_status['body'])
@@ -275,7 +279,7 @@ def register(ID,pw):
     sock = new_to_server(json.dumps(ackDict))
     result = json.loads(recv_and_close(sock))
     print(result['body'])
-    print(result['time'])
+    print(time.asctime( time.localtime(result['time']) ))
 
 def login(ID,pw):
     global SayGoodBye
