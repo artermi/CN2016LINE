@@ -179,14 +179,16 @@ def history(user):
     global curID
 
     ackDict = {'action':'history', 'to':str(user), 'from':str(curID), 'time' : time.time()}
-    sock = new_to_server( json.dumps(ackDict) ) 
+    sock = new_to_server( json.dumps(ackDict) )
+    time.sleep(0.1)
+    
     result = json.loads(recv_and_close(sock))
     for his in result['body']:
         need = json.loads(his.rstrip())
         if need['action'] == 'msg':
             print(need['from'],'說   :',need['body'],'   ' + time.asctime( time.localtime(need['time']) ))
         elif need['action'] == 'fl':
-            print(need['from'],'寄完了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
+            print(need['from'],'寄過了檔案:',need['name'],'   ' + time.asctime( time.localtime(need['time']) ))
             
 
 

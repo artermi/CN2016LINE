@@ -264,12 +264,6 @@ def fl(sock, data):
     dataLen = data['length']
     dataStr = json.dumps(data)
 
-    ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送成功'}
-    ack = json.dumps(ackDict)
-    sock.send(ack.encode('utf-8'))
-    #tell the 
-    
-
 
     if data['to'] not in IDsocket:  # account not existing
         ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '無此帳號'}
@@ -282,6 +276,11 @@ def fl(sock, data):
         ack = json.dumps(ackDict)
         sock.send(ack.encode('utf-8'))
         return
+    ackDict = {'action' : 'fl', 'to' : data['from'], 'time' : time.time(), 'body' : '檔案資訊傳送成功'}
+    ack = json.dumps(ackDict)
+    sock.send(ack.encode('utf-8'))
+    #tell the 
+    
 
     with open('storage/' + data['to'] + '/' + data['from'] + '.log', 'a') as f: # write metafile to log on receiver's side
         while True: # requiring exclusive lock
