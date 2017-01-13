@@ -180,7 +180,7 @@ def history(user):
 
     ackDict = {'action':'history', 'to':str(user), 'from':str(curID), 'time' : time.time()}
     sock = new_to_server( json.dumps(ackDict) )
-    time.sleep(0.1)
+    time.sleep(0.2)
     
     result = json.loads(recv_and_close(sock))
     for his in result['body']:
